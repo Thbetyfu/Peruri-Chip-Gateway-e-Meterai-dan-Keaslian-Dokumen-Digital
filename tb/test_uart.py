@@ -56,9 +56,9 @@ async def uart_end_to_end(dut):
         ("bit-flip", None, None),
     ]:
         if label == "sah":
-            tag = G.tag_of(KEY, rec)
+            tag = G.sign_txn(KEY, rec)
         else:
-            rec = bytearray(G.make_record(0xABC, 2, 1000, 6)); tag = G.tag_of(KEY, bytes(rec)); rec[40] ^= 0x10; rec = bytes(rec)
+            rec = bytearray(G.make_record(0xABC, 2, 1000, 6)); tag = G.sign_txn(KEY, bytes(rec)); rec[40] ^= 0x10; rec = bytes(rec)
         for i, w in enumerate(G.words_be(rec)): await wr(dut, i, w)
         for i, w in enumerate(G.words_be(tag)): await wr(dut, 0x10 + i, w)
         await wr(dut, 0x18, 1)

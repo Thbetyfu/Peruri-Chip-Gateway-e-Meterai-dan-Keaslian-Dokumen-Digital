@@ -1,4 +1,5 @@
-"""Jalankan seluruh testbench: python tb/run.py  (butuh icarus-verilog + cocotb>=2)."""
+"""Jalankan testbench: python tb/run.py [all|core|uart|random|wave]  (butuh icarus-verilog + cocotb>=2).
+random: RANDOM_N=10000 (default) transaksi acak vs golden model."""
 import os
 import sys
 from pathlib import Path
@@ -24,6 +25,8 @@ if __name__ == "__main__":
     which = sys.argv[1] if len(sys.argv) > 1 else "all"
     if which in ("all", "core"):
         run("screener_top", "test_screener")
+    if which in ("random",):
+        run("screener_top", "test_random")
     if which == "wave":
         run("screener_top", "test_wave")
     if which in ("all", "uart"):

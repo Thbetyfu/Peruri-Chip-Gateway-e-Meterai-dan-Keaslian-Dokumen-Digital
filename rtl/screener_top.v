@@ -28,8 +28,11 @@
 // Reasons : b0 INTEGRITY, b1 REPLAY, b2 VELOCITY, b3 AMOUNT, b4 DOMAIN, b5 VAULT
 //
 // Format rekaman transaksi (byte 0 = paling kiri):
-//   [0] domain=0x01 [1] tipe [2:3] rsv [4:7] timestamp [8:15] nonce
+//   [0] domain=0x01 [1] tipe [2:3] id klien [4:7] timestamp [8:15] nonce
 //   [16:23] id akun [24:31] nominal [32:63] hash dokumen (SHA-256)
+// Kunci: tag transaksi = HMAC(K_client(id), rekaman), dengan
+//   K_client = HMAC(K_master, "PERURI-CLIENT-KEY-v1" || id) diturunkan di chip
+//   (cache 1 entri). Token = HMAC(K_tok, pesan token), K_tok diturunkan saat LOCK.
 // Pesan token (64 byte):
 //   [0] domain=0x02 [1] verdict [2:3] reasons [4:7] seq
 //   [8:31] 24 byte pertama TAG transaksi [32:63] token sebelumnya (prev head)
@@ -81,9 +84,10 @@ module screener_top #(
   wire wr_prov_area = write && (address[7:4] == 4'h4);
 
   // ------------------------------------------------------------ key vault
-  wire        v_pc_start, v_pc_active, v_locked, v_tamper, v_ready;
-  wire [511:0] v_keyblock;
-  wire [255:0] v_ipad, v_opad;
+  wire        v_active, v_locked, v_tamper, v_ready;
+  wire        v_start, v_mode;
+  wire [511:0] v_msg;
+  wire [255:0] v_ipad, v_opad, v_tipad, v_topad;
   wire        h_busy, h_done;
   wire [255:0] h_mac, h_st_i, h_st_o;
 
@@ -91,23 +95,40 @@ module screener_top #(
     .clk(clk), .rst_n(rst_n),
     .key_we(wr_key), .key_idx(address[2:0]), .key_wdata(writedata),
     .lock_req(wr_lock),
-    .illegal_write(wr_prov_area && (v_locked || v_pc_active) && !wr_key && !wr_lock),
+    .illegal_write(wr_prov_area && (v_locked || v_active) && !wr_key && !wr_lock),
     .tamper_n(tamper_n),
-    .pc_start(v_pc_start), .pc_keyblock(v_keyblock), .pc_done(h_done),
-    .pc_st_i(h_st_i), .pc_st_o(h_st_o), .pc_active(v_pc_active),
-    .ipad_state(v_ipad), .opad_state(v_opad),
+    .eng_start(v_start), .eng_mode(v_mode), .eng_msg(v_msg),
+    .eng_done(h_done), .eng_mac(h_mac), .eng_st_i(h_st_i), .eng_st_o(h_st_o),
+    .active(v_active),
+    .ipad_state(v_ipad), .opad_state(v_opad), .tok_ipad(v_tipad), .tok_opad(v_topad),
     .locked(v_locked), .tamper(v_tamper), .ready(v_ready)
   );
 
+  // ----------------------------------------------- cache kunci klien (1 entri)
+  // Hanya state ipad/opad K_client yang disimpan; tidak ada jalur ke bus.
+  reg  [255:0] c_ipad, c_opad;
+  reg  [15:0]  c_id;
+  reg          c_valid;
+  wire [15:0]  txn_cid  = txn[495:480];
+  wire         c_hit    = c_valid && (c_id == txn_cid);
+  localparam [495:0] MSG_CLK_HI = {"PERURI-CLIENT-KEY-v1", 336'd0};
+
   // ----------------------------------------------------------- hmac engine
-  reg         m_start;
+  // Pemakai: vault (saat LOCK) atau FSM utama. Sel_state memilih pasangan
+  // ipad/opad: 0 = master, 1 = klien (cache), 2 = token.
+  reg         m_start, m_mode;
   reg [511:0] m_msg;
+  reg [1:0]   m_sel;
+  wire [255:0] sel_i = v_active ? v_ipad :
+                       (m_sel == 2'd1) ? c_ipad : (m_sel == 2'd2) ? v_tipad : v_ipad;
+  wire [255:0] sel_o = v_active ? v_opad :
+                       (m_sel == 2'd1) ? c_opad : (m_sel == 2'd2) ? v_topad : v_opad;
   hmac_engine u_hmac (
     .clk(clk), .rst_n(rst_n),
-    .start(v_pc_start | m_start),
-    .mode_precomp(v_pc_active),
-    .msg(v_pc_active ? v_keyblock : m_msg),
-    .ipad_state(v_ipad), .opad_state(v_opad),
+    .start(v_active ? v_start : m_start),
+    .mode_precomp(v_active ? v_mode : m_mode),
+    .msg(v_active ? v_msg : m_msg),
+    .ipad_state(sel_i), .opad_state(sel_o),
     .busy(h_busy), .done(h_done),
     .mac_out(h_mac), .pc_st_i(h_st_i), .pc_st_o(h_st_o)
   );
@@ -137,7 +158,7 @@ module screener_top #(
 
   // ------------------------------------------------------------------ FSM
   localparam [2:0] S_IDLE = 3'd0, S_MAC = 3'd1, S_RULE = 3'd2,
-                   S_SIGN = 3'd3, S_LOG = 3'd4;
+                   S_SIGN = 3'd3, S_LOG = 3'd4, S_KD1 = 3'd5, S_KD2 = 3'd6;
   reg [2:0] state;
 
   always @(posedge clk or negedge rst_n) begin
@@ -149,7 +170,9 @@ module screener_top #(
       log_idx <= {LOG_DEPTH_BITS{1'b0}};
       verdict <= V_REJECT; reasons <= 16'd0; res_seq <= 32'd0;
       cycles <= 32'd0; cyc_cnt <= 32'd0; token <= 256'd0;
-      m_start <= 1'b0; m_msg <= 512'd0; r_start <= 1'b0; l_append <= 1'b0;
+      m_start <= 1'b0; m_mode <= 1'b0; m_sel <= 2'd0; m_msg <= 512'd0;
+      r_start <= 1'b0; l_append <= 1'b0;
+      c_ipad <= 256'd0; c_opad <= 256'd0; c_id <= 16'd0; c_valid <= 1'b0;
     end else begin
       m_start <= 1'b0; r_start <= 1'b0; l_append <= 1'b0;
 
@@ -172,7 +195,7 @@ module screener_top #(
           3'd6: tag[63:32]   <= writedata; default: tag[31:0] <= writedata;
         endcase
       end
-      if (wr_cfg && !v_locked && !v_pc_active && !v_tamper) case (address[1:0])
+      if (wr_cfg && !v_locked && !v_active && !v_tamper) case (address[1:0])
         2'd0: cfg_window <= writedata;
         2'd1: cfg_vel    <= writedata[15:0];
         2'd2: cfg_amt_hi <= writedata;
@@ -190,9 +213,24 @@ module screener_top #(
             verdict <= V_REJECT; reasons <= 16'h0020; token <= 256'd0;
             res_seq <= 32'hFFFF_FFFF; cycles <= 32'd1;
             busy <= 1'b0; done_flag <= 1'b1;
+          end else if (c_hit) begin
+            m_msg <= txn; m_mode <= 1'b0; m_sel <= 2'd1; m_start <= 1'b1; state <= S_MAC;
           end else begin
-            m_msg <= txn; m_start <= 1'b1; state <= S_MAC;
+            // turunkan K_client = HMAC(K_master, MSG_CLK || id)
+            c_valid <= 1'b0;
+            m_msg <= {MSG_CLK_HI, txn_cid}; m_mode <= 1'b0; m_sel <= 2'd0;
+            m_start <= 1'b1; state <= S_KD1;
           end
+        end
+
+        S_KD1: if (h_done) begin
+          // precompute K_client
+          m_msg <= {h_mac, 256'd0}; m_mode <= 1'b1; m_start <= 1'b1; state <= S_KD2;
+        end
+
+        S_KD2: if (h_done) begin
+          c_ipad <= h_st_i; c_opad <= h_st_o; c_id <= txn_cid; c_valid <= 1'b1;
+          m_msg <= txn; m_mode <= 1'b0; m_sel <= 2'd1; m_start <= 1'b1; state <= S_MAC;
         end
 
         // ---- Integrity Gate: HMAC rekaman dibandingkan dengan TAG
@@ -219,7 +257,7 @@ module screener_top #(
         // ---- Verdict token = HMAC(K, verdict || seq || tag || prev_head)
         S_SIGN: if (!m_start && !h_busy) begin
           m_msg   <= {DOM_TOKEN, 6'd0, verdict, reasons, l_count, tag[255:64], l_head};
-          m_start <= 1'b1; state <= S_LOG;
+          m_mode  <= 1'b0; m_sel <= 2'd2; m_start <= 1'b1; state <= S_LOG;
         end
 
         S_LOG: if (h_done) begin
@@ -233,6 +271,9 @@ module screener_top #(
         default: state <= S_IDLE;
       endcase
 
+      if (v_tamper) begin
+        c_ipad <= 256'd0; c_opad <= 256'd0; c_valid <= 1'b0;   // zeroize cache klien
+      end
       if (v_tamper && busy) begin
         // tamper di tengah proses: batalkan, fail-closed
         verdict <= V_REJECT; reasons <= 16'h0020; token <= 256'd0;
@@ -253,7 +294,7 @@ module screener_top #(
     if (!rst_n) readdata <= 32'd0;
     else if (read) begin
       casez (address)
-        8'h19: readdata <= {28'd0, v_tamper, v_locked, done_flag, busy | v_pc_active};
+        8'h19: readdata <= {28'd0, v_tamper, v_locked, done_flag, busy | v_active};
         8'h1A: readdata <= {8'd0, reasons, 6'd0, verdict};
         8'h1B: readdata <= res_seq;
         8'h1C: readdata <= cycles;

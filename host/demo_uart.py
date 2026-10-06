@@ -72,15 +72,15 @@ def main(port):
 
     print("== Transaksi")
     r1 = G.make_record(0x1001, 1, 10_000, 1000, b"surat.pdf")
-    run("transaksi sah", r1, G.tag_of(KEY, r1))
-    bad = bytearray(G.make_record(0x1001, 2, 10_000, 1001)); t = G.tag_of(KEY, bytes(bad)); bad[40] ^= 1
+    run("transaksi sah", r1, G.sign_txn(KEY, r1))
+    bad = bytearray(G.make_record(0x1001, 2, 10_000, 1001)); t = G.sign_txn(KEY, bytes(bad)); bad[40] ^= 1
     run("satu bit diubah", bytes(bad), t)
-    run("replay transaksi pertama", r1, G.tag_of(KEY, r1))
+    run("replay transaksi pertama", r1, G.sign_txn(KEY, r1))
     for i in range(6):
         r = G.make_record(0x2002, i + 1, 5_000, 2000 + i)
-        run(f"lonjakan akun #{i+1}", r, G.tag_of(KEY, r))
+        run(f"lonjakan akun #{i+1}", r, G.sign_txn(KEY, r))
     r = G.make_record(0x3003, 1, 50_000_000, 3000)
-    run("nominal besar", r, G.tag_of(KEY, r))
+    run("nominal besar", r, G.sign_txn(KEY, r))
 
     print("== Ekspor & verifikasi rantai log")
     entries = []
@@ -89,16 +89,16 @@ def main(port):
         meta = c.rd(0x33)
         entries.append({"seq": c.rd(0x32), "verdict": (meta >> 16) & 0xFF, "reasons": meta & 0xFFFF,
                         "txn_tag24": tags[i][:24], "token": c.rd_bytes(0x38, 8)})
-    print("  ", G.verify_chain(KEY, entries)[1])
+    print("  ", G.verify_chain(G.token_key(KEY), entries)[1])
     e = [dict(x) for x in entries]; e[1]["verdict"] = G.ACCEPT; e[1]["reasons"] = 0
-    print("   setelah entri #1 dipalsukan:", G.verify_chain(KEY, e)[1])
+    print("   setelah entri #1 dipalsukan:", G.verify_chain(G.token_key(KEY), e)[1])
 
     print("== Serangan host: tulis ulang kunci setelah LOCK")
     c.wr(0x40, 0x41414141)
     st = c.rd(0x19)
     print(f"   status: locked={bool(st & 4)} tamper={bool(st & 8)} (LED7 menyala)")
     r = G.make_record(0x1001, 99, 1, 9999)
-    v, rr, *_ = c.submit(r, G.tag_of(KEY, r))
+    v, rr, *_ = c.submit(r, G.sign_txn(KEY, r))
     print(f"   transaksi setelah tamper -> {G.VERDICT_NAME[v]} {G.reasons_str(rr)}")
 
 

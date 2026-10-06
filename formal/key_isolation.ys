@@ -1,0 +1,42 @@
+# Bukti struktural isolasi kunci (Yosys)
+#
+# Klaim: tidak ada jalur logika dari material rahasia (kunci master, state
+# ipad/opad master & token, salinan kunci di vault, cache ipad/opad kunci klien,
+# serta keluaran precompute hmac_engine) ke port readdata. Satu-satunya keluaran
+# hmac_engine yang boleh mencapai readdata adalah mac_out (verdict token yang
+# memang diterbitkan).
+#
+# Metode: hmac_engine dipertahankan sebagai sel hitam (keep_hierarchy). Fan-in
+# cone readdata ditelusuri mundur melalui SEMUA logika, mux, register, dan RAM
+# screener_top + key_vault + rule_engine + audit_log, dan TIDAK menembus
+# hmac_engine. Pengecekan memakai sel register fisik dan port sel, sehingga
+# tidak terpengaruh nama/alias wire hasil flatten.
+#
+# Jalankan:  yosys -s formal/key_isolation.ys
+# Kontrol negatif:  bash formal/run_formal.sh  (versi RTL yang sengaja dibocorkan
+#                   harus GAGAL)
+
+read_verilog -DSYNTHESIS rtl/sha256_round.v rtl/sha256_core.v rtl/hmac_engine.v rtl/key_vault.v rtl/rule_engine.v rtl/audit_log.v rtl/screener_top.v
+hierarchy -top screener_top
+proc
+opt_clean
+setattr -mod -set keep_hierarchy 1 hmac_engine
+flatten
+opt_clean
+
+# fan-in cone readdata; sel hmac_engine menjadi batas
+select -set cone o:readdata %ci*:-hmac_engine
+
+# register fisik yang menyimpan rahasia
+select -set secret w:u_vault.key w:u_vault.ipad_state w:u_vault.opad_state w:u_vault.tok_ipad w:u_vault.tok_opad w:u_vault.eng_msg w:c_ipad w:c_opad
+select -set secretcells @secret %ci1 t:$adff t:$dff t:$adffe t:$dffe %u %u %u %i
+select -assert-count 8 @secretcells
+
+# (1) tidak ada register rahasia di cone readdata
+select -assert-none @cone @secretcells %i
+# (2) keluaran precompute hmac_engine (setara kunci) tidak mencapai readdata
+select -assert-none @cone t:hmac_engine %co1:+[pc_st_i,pc_st_o] %i t:hmac_engine %d
+# (3) kontrol positif: mac_out (token) memang mencapai readdata -> cone tidak kosong
+select -assert-any @cone t:hmac_engine %co1:+[mac_out] %i t:hmac_engine %d
+
+log "BUKTI LULUS: 8 register rahasia & keluaran precompute tidak punya jalur ke readdata; hanya mac_out (token) yang terhubung"

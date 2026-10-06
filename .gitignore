@@ -5,3 +5,5 @@ quartus/db/
 quartus/incremental_db/
 quartus/output_files/
 quartus/*.qws
+tb/results.xml
+quartus/c5_pin_model_dump.txt
