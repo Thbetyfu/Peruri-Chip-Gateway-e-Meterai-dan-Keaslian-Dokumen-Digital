@@ -1,0 +1,26 @@
+
+11. Printing statistics.
+
+=== de10_nano_top ===
+
+   Number of wires:               6097
+   Number of wire bits:          24331
+   Number of public wires:        6097
+   Number of public wire bits:   24331
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:              13196
+     MISTRAL_ALUT2                1161
+     MISTRAL_ALUT3                1941
+     MISTRAL_ALUT4                 858
+     MISTRAL_ALUT5                1332
+     MISTRAL_ALUT6                 554
+     MISTRAL_ALUT_ARITH            661
+     MISTRAL_CLKBUF                  1
+     MISTRAL_FF                   6627
+     MISTRAL_IB                      4
+     MISTRAL_M10K                   14
+     MISTRAL_NOT                    34
+     MISTRAL_OB                      9
+

@@ -1,0 +1,40 @@
+digraph G {
+  graph [rankdir=TB, fontname="Inter", fontsize=11, nodesep=0.3, ranksep=0.32, pad=0.25, dpi=200, bgcolor="white"];
+  node  [shape=box, style="rounded,filled", fontname="Inter", fontsize=10.5, color="#3b4252", fillcolor="#eef2f7", penwidth=1.2, margin="0.14,0.08"];
+  edge  [fontname="Inter", fontsize=9, color="#4c566a", arrowsize=0.7];
+
+  host [label="Host server\n(Linux di HPS ARM /\nPC via UART)\n— diasumsikan dapat\ndikompromi (root) —", fillcolor="#fde8e8", color="#b42318"];
+  backend [label="Backend / database\nhanya menerima transaksi\nyang membawa verdict\ntoken valid", fillcolor="#fde8e8", color="#b42318"];
+
+  subgraph cluster_chip {
+    label="Secure boundary — chip screener (FPGA fabric Cyclone V 5CSEBA6)\nTidak ada jalur baca ke kunci, state ipad/opad, atau state internal SHA";
+    labeljust=l; fontsize=10; fontcolor="#1d3a6e"; style="rounded,dashed"; color="#1d3a6e"; penwidth=1.6;
+
+    bus  [label="Bus interface\nAvalon-MM 32-bit\n(HPS lightweight bridge\n/ uart_bridge)"];
+    regs [label="Register TXN + TAG\n(64 B rekaman, 32 B tag)\ndikunci selama busy"];
+    gate [label="① Integrity Gate\nHMAC-SHA256\n(hmac_engine)", fillcolor="#dbeafe", color="#1d4ed8"];
+    core [label="sha256_core\nK-ROM + message schedule\n+ FSM 64 ronde\n(ronde: turunan TT07)", fillcolor="#f1f5f9"];
+    rule [label="② Rule Engine +\nAccount State Memory\nreplay · velocity · nominal", fillcolor="#dcfce7", color="#15803d"];
+    dec  [label="③ Decision Unit\nACCEPT / FLAG /\nESCALATE / REJECT"];
+    tok  [label="④ Verdict token\nHMAC(K, verdict‖seq‖tag‖prev)", fillcolor="#dbeafe", color="#1d4ed8"];
+    log  [label="⑤ Audit Log\nhash-chain on-chip\n(read-only dari host)", fillcolor="#fef3c7", color="#b45309"];
+    vault[label="Key Vault\nwrite-once → LOCK\nkunci mentah dihapus\ntamper → zeroize", fillcolor="#ede9fe", color="#6d28d9"];
+    tpin [label="Pin tamper\n(sensor)", shape=box, fillcolor="#ffffff"];
+  }
+
+  host -> bus [label="tulis TXN/TAG,\nbaca hasil"];
+  bus -> regs;
+  regs -> gate;
+  gate -> core [dir=both, style=dashed, label="3 blok"];
+  gate -> rule [label="MAC valid"];
+  gate -> dec  [label="MAC salah →\nREJECT langsung", color="#b42318", fontcolor="#b42318"];
+  rule -> dec;
+  dec -> tok;
+  tok -> log;
+  log -> bus [label="token, head,\nentri log", style=dashed];
+  vault -> gate [label="ipad/opad", color="#6d28d9", fontcolor="#6d28d9"];
+  vault -> tok [color="#6d28d9"];
+  tpin -> vault [color="#6d28d9"];
+  bus -> backend [label="transaksi + token", style=dashed];
+  {rank=same; host; backend;}
+}
