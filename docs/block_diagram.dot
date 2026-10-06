@@ -12,13 +12,14 @@ digraph G {
 
     bus  [label="Bus interface\nAvalon-MM 32-bit\n(HPS lightweight bridge\n/ uart_bridge)"];
     regs [label="Register TXN + TAG\n(64 B rekaman, 32 B tag)\ndikunci selama busy"];
-    gate [label="① Integrity Gate\nHMAC-SHA256\n(hmac_engine)", fillcolor="#dbeafe", color="#1d4ed8"];
+    gate [label="① Integrity Gate\nHMAC-SHA256(K_client)\n(hmac_engine)", fillcolor="#dbeafe", color="#1d4ed8"];
     core [label="sha256_core\nK-ROM + message schedule\n+ FSM 64 ronde\n(ronde: turunan TT07)", fillcolor="#f1f5f9"];
-    rule [label="② Rule Engine +\nAccount State Memory\nreplay · velocity · nominal", fillcolor="#dcfce7", color="#15803d"];
+    rule [label="② Rule Engine +\n64-slot Account RAM\nnonce + timestamp watermark\nvelocity · nominal", fillcolor="#dcfce7", color="#15803d"];
     dec  [label="③ Decision Unit\nACCEPT / FLAG /\nESCALATE / REJECT"];
-    tok  [label="④ Verdict token\nHMAC(K, verdict‖seq‖tag‖prev)", fillcolor="#dbeafe", color="#1d4ed8"];
+    tok  [label="④ Verdict token\nHMAC(K_tok, verdict‖seq‖tag‖prev)", fillcolor="#dbeafe", color="#1d4ed8"];
     log  [label="⑤ Audit Log\nhash-chain on-chip\n(read-only dari host)", fillcolor="#fef3c7", color="#b45309"];
-    vault[label="Key Vault\nwrite-once → LOCK\nkunci mentah dihapus\ntamper → zeroize", fillcolor="#ede9fe", color="#6d28d9"];
+    vault[label="Key Vault\nwrite-once → LOCK\nK_master → K_tok\nkunci mentah dihapus\ntamper → zeroize", fillcolor="#ede9fe", color="#6d28d9"];
+    cache[label="Derivasi K_client di chip\nCache ipad/opad 1 klien\ncache miss: +5 blok SHA\ntamper → zeroize", fillcolor="#ede9fe", color="#6d28d9"];
     tpin [label="Pin tamper\n(sensor)", shape=box, fillcolor="#ffffff"];
   }
 
@@ -32,7 +33,8 @@ digraph G {
   dec -> tok;
   tok -> log;
   log -> bus [label="token, head,\nentri log", style=dashed];
-  vault -> gate [label="ipad/opad", color="#6d28d9", fontcolor="#6d28d9"];
+  vault -> cache [label="state master", color="#6d28d9", fontcolor="#6d28d9"];
+  cache -> gate [label="state klien", color="#6d28d9", fontcolor="#6d28d9"];
   vault -> tok [color="#6d28d9"];
   tpin -> vault [color="#6d28d9"];
   bus -> backend [label="transaksi + token", style=dashed];

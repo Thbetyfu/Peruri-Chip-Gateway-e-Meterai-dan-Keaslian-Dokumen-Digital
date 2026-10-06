@@ -10,8 +10,12 @@ G = T.G
 async def record(dut):
     bus = await T.setup(dut)
     await T.provision(bus)
-    rec = G.make_record(0x1001, 1, 10_000, 1000)
-    tag = G.tag_of(T.KEY, rec)
+    # Warm the client-key cache before recording the cache-hit path.
+    warm = G.make_record(0x1001, 1, 10_000, 1000)
+    verdict, _, _, _, _ = await T.submit(bus, warm, G.sign_txn(T.KEY, warm))
+    assert verdict == G.ACCEPT
+    rec = G.make_record(0x1001, 2, 10_000, 1001)
+    tag = G.sign_txn(T.KEY, rec)
     trace = []
     async def sampler():
         while True:
@@ -27,5 +31,9 @@ async def record(dut):
     for _ in range(460):
         await RisingEdge(dut.clk)
     h.cancel()
+    result = await bus.read(T.A_RESULT)
+    assert (result & 3) == G.ACCEPT, "waveform must show a valid transaction"
+    assert await bus.read(T.A_CYC) == 411, "waveform must show the cache-hit path"
     out = os.path.join(os.path.dirname(__file__), "..", "build", "trace.json")
-    json.dump(trace, open(out, "w"))
+    with open(out, "w", encoding="utf-8") as stream:
+        json.dump(trace, stream)

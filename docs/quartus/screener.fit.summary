@@ -1,16 +1,16 @@
-Fitter Status : Successful - Wed Oct  7 00:53:37 2026
+Fitter Status : Successful - Wed Oct  7 05:29:22 2026
 Quartus Prime Version : 24.1std.0 Build 1077 03/04/2025 SC Lite Edition
 Revision Name : screener
 Top-level Entity Name : de10_nano_top
 Family : Cyclone V
 Device : 5CSEBA6U23I7
 Timing Models : Final
-Logic utilization (in ALMs) : 3,535 / 41,910 ( 8 % )
-Total registers : 7024
+Logic utilization (in ALMs) : 4,346 / 41,910 ( 10 % )
+Total registers : 8568
 Total pins : 13 / 314 ( 4 % )
 Total virtual pins : 0
-Total block memory bits : 89,600 / 5,662,720 ( 2 % )
-Total RAM Blocks : 13 / 553 ( 2 % )
+Total block memory bits : 93,696 / 5,662,720 ( 2 % )
+Total RAM Blocks : 15 / 553 ( 3 % )
 Total DSP Blocks : 0 / 112 ( 0 % )
 Total HSSI RX PCSs : 0
 Total HSSI PMA RX Deserializers : 0

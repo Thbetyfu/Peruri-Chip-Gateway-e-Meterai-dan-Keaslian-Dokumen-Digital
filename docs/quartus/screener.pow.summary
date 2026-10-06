@@ -1,0 +1,12 @@
+Power Analyzer Status : Successful - Wed Oct  7 06:19:18 2026
+Quartus Prime Version : 24.1std.0 Build 1077 03/04/2025 SC Lite Edition
+Revision Name : screener
+Top-level Entity Name : de10_nano_top
+Family : Cyclone V
+Device : 5CSEBA6U23I7
+Power Models : Final
+Total Thermal Power Dissipation : 493.84 mW
+Core Dynamic Thermal Power Dissipation : 68.61 mW
+Core Static Thermal Power Dissipation : 412.95 mW
+I/O Thermal Power Dissipation : 12.29 mW
+Power Estimation Confidence : Low: user provided insufficient toggle rate data

@@ -53,7 +53,7 @@ for s, w, v in segments("rule_ph"):
 segs = [s for s in segments("rule_ph") if s[2] != 0]
 if segs:
     s0 = segs[0][0]; w0 = sum(s[1] for s in segs)
-    ax.annotate(f"rule engine: {w0} cycle", (s0 + w0, y), xytext=(s0 + 25, y + 0.05), fontsize=7, va="center")
+    ax.annotate(f"ph != 0: {w0} cycle (start → done: 3 cycle)", (s0 + w0, y), xytext=(s0 + 25, y + 0.05), fontsize=7, va="center")
 rows.append("rule_engine")
 
 # baris 4: log append
@@ -71,7 +71,7 @@ ax.set_xlim(0, N)
 ax.set_ylim(-0.7, 3.6)
 ax.set_xlabel("cycle clock (50 MHz → 20 ns/cycle)", fontsize=8)
 ax.tick_params(axis="x", labelsize=7)
-ax.set_title(f"Hasil simulasi RTL: satu transaksi diproses dalam {N-2} cycle (≈{(N-2)*20/1000:.1f} µs @ 50 MHz)", fontsize=9)
+ax.set_title(f"Simulasi RTL, cache hit: {N-2} cycle (≈{(N-2)*20/1000:.2f} µs @ 50 MHz)", fontsize=9)
 for sp in ("top", "right"):
     ax.spines[sp].set_visible(False)
 ax.grid(axis="x", alpha=0.25)

@@ -1,0 +1,17 @@
+     -.--ns INFO     gpi                                ..\gpi\GpiCommon.cpp:242  in gpi_load_users                  Loaded entry library: 'C:\Users\thori\AppData\Local\Programs\Python\Python312\python312.dll'
+     -.--ns INFO     gpi                                ..\gpi\GpiCommon.cpp:234  in gpi_load_users                  Running entry func 'initialize' from loaded library 'C:\Users\thori\Downloads\Lomba Peruri\peruri-screener\build\test-env\Lib\site-packages\cocotb\simulator.cp312-win_amd64.pyd'
+     -.--ns INFO     pygpi                              ..ib\pygpi\embed.cpp:115  in initialize                      Using Python 3.12.10 interpreter at C:\Users\thori\Downloads\Lomba Peruri\peruri-screener\build\test-env\Scripts\python.exe
+     -.--ns INFO     gpi                                ..\gpi\GpiCommon.cpp:74   in gpi_print_registered_impl       GPI: VPI support registered
+     0.00ns INFO     cocotb.initialize                  Seeding Python random module with 1791325577
+     0.00ns INFO     cocotb.initialize                  Initialized cocotb v2.1.0 from C:\Users\thori\Downloads\Lomba Peruri\peruri-screener\build\test-env\Lib\site-packages\cocotb
+     0.00ns INFO     cocotb.initialize                  Running on Icarus Verilog version 12.0 (devel)
+     0.00ns INFO     cocotb.regression                  Running tests
+     0.00ns INFO     cocotb.regression                  running test_wave.record (1/1)
+ 36890.00ns INFO     cocotb.regression                  test_wave.record passed
+ 36890.00ns INFO     cocotb.regression                  **************************************************************************************
+                                                        ** TEST                          STATUS  SIM TIME (ns)  REAL TIME (s)  RATIO (ns/s) **
+                                                        **************************************************************************************
+                                                        ** test_wave.record               PASS       36890.00           0.34     107551.02  **
+                                                        **************************************************************************************
+                                                        ** TESTS=1 PASS=1 FAIL=0 SKIP=0              36890.00           0.41      90862.07  **
+                                                        **************************************************************************************

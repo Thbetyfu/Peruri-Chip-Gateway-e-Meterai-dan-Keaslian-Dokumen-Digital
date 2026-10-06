@@ -3,19 +3,19 @@ Timing Analyzer Summary
 ------------------------------------------------------------
 
 Type  : Slow 1100mV 100C Model Setup 'clk50'
-Slack : 6.053
+Slack : 6.718
 TNS   : 0.000
 
 Type  : Slow 1100mV 100C Model Hold 'clk50'
-Slack : 0.268
+Slack : 0.265
 TNS   : 0.000
 
 Type  : Slow 1100mV 100C Model Recovery 'clk50'
-Slack : 12.158
+Slack : 12.343
 TNS   : 0.000
 
 Type  : Slow 1100mV 100C Model Removal 'clk50'
-Slack : 3.692
+Slack : 3.553
 TNS   : 0.000
 
 Type  : Slow 1100mV 100C Model Minimum Pulse Width 'clk50'
@@ -23,63 +23,63 @@ Slack : 8.811
 TNS   : 0.000
 
 Type  : Slow 1100mV -40C Model Setup 'clk50'
-Slack : 5.701
+Slack : 6.673
 TNS   : 0.000
 
 Type  : Slow 1100mV -40C Model Hold 'clk50'
-Slack : 0.246
+Slack : 0.218
 TNS   : 0.000
 
 Type  : Slow 1100mV -40C Model Recovery 'clk50'
-Slack : 12.182
+Slack : 12.350
 TNS   : 0.000
 
 Type  : Slow 1100mV -40C Model Removal 'clk50'
-Slack : 3.679
+Slack : 3.541
 TNS   : 0.000
 
 Type  : Slow 1100mV -40C Model Minimum Pulse Width 'clk50'
-Slack : 8.814
+Slack : 8.800
 TNS   : 0.000
 
 Type  : Fast 1100mV 100C Model Setup 'clk50'
-Slack : 12.747
+Slack : 11.814
 TNS   : 0.000
 
 Type  : Fast 1100mV 100C Model Hold 'clk50'
-Slack : 0.152
+Slack : 0.147
 TNS   : 0.000
 
 Type  : Fast 1100mV 100C Model Recovery 'clk50'
-Slack : 16.063
+Slack : 16.133
 TNS   : 0.000
 
 Type  : Fast 1100mV 100C Model Removal 'clk50'
-Slack : 1.945
+Slack : 1.869
 TNS   : 0.000
 
 Type  : Fast 1100mV 100C Model Minimum Pulse Width 'clk50'
-Slack : 8.487
+Slack : 8.486
 TNS   : 0.000
 
 Type  : Fast 1100mV -40C Model Setup 'clk50'
-Slack : 13.622
+Slack : 13.329
 TNS   : 0.000
 
 Type  : Fast 1100mV -40C Model Hold 'clk50'
-Slack : 0.124
+Slack : 0.107
 TNS   : 0.000
 
 Type  : Fast 1100mV -40C Model Recovery 'clk50'
-Slack : 16.360
+Slack : 16.424
 TNS   : 0.000
 
 Type  : Fast 1100mV -40C Model Removal 'clk50'
-Slack : 1.775
+Slack : 1.716
 TNS   : 0.000
 
 Type  : Fast 1100mV -40C Model Minimum Pulse Width 'clk50'
-Slack : 8.416
+Slack : 8.417
 TNS   : 0.000
 
 ------------------------------------------------------------
